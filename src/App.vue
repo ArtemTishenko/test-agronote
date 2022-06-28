@@ -61,34 +61,46 @@ export default {
             let arrResult = []
             let result = {}
             let resultData = JSON.parse(JSON.stringify(this.responseData))
+
+            let arrCards = []
+            let accumCards = {
+                userId:0,
+                titles:[],
+                totalCompleted: 0,
+                completed: 0,
+            }
             // result = resultData
             // console.log('!!!!!',resultData)
-
+            debugger
             if (!(resultData && Object.keys(resultData).length === 0 && Object.getPrototypeOf(resultData) === Object.prototype)){
                 console.log('!!!',resultData)
-                result = resultData.reduce((acc,item)=>{
-                    const objItem = JSON.parse(JSON.stringify(item))
-                    // console.log('objItem.userId',objItem.userId,resultData[idx].userId)
-                    if(objItem.userId === 1){
-                        acc.titles.push(objItem.title)
-                        acc.userId = objItem.userId
-                        acc.totalCount = acc.totalCount +1
-                        if(objItem.completed){
-                            acc.count = acc.count+1
-                            this.addToCardsArray(acc)
+
+                for(let i = 0; i < resultData.length; i++){
+                    if(((i+1)<resultData.length)){
+                        console.log('11111111',resultData[i].userId, resultData[i+1].userId , accumCards)
+                        if (resultData[i].userId === resultData[i+1].userId){
+                            accumCards.userId = resultData[i].userId
+                            accumCards.titles.push(resultData[i].title)
+                            accumCards.totalCompleted = accumCards.totalCompleted+1
+                            if( resultData[i].completed){
+                                accumCards.completed = accumCards.completed +1
+                            }
+                        }else{
+                            let test = JSON.stringify(accumCards)
+                            arrCards.push(JSON.parse(test))
+                            accumCards.userId = 0
+                            accumCards.titles = []
+                            accumCards.totalCompleted = 0
+                            accumCards.completed = 0
                         }
                     }
-                    return acc
-                },{
-                    userId:0,
-                    totalCount:0,
-                    count:0,
-                    titles:[]
-                })
+
+
+                }
+                console.log('arrCards=',arrCards)
             }
 
-            console.log('arrResult',arrResult)
-            return result
+            return arrCards
         }
     },
     methods: {
