@@ -34,20 +34,5 @@ export default {
 </script>
 
 <style scoped>
-.button {
-    padding: 1rem;
-    border: 0px;
-    border-radius: 10px;
-    background-color: mediumseagreen;
-    font-weight: 500;
-    margin-bottom: 10px;
-    color: white;
 
-}
-
-button:hover {
-    cursor: pointer;
-    font-weight: 600;
-    outline: 1px solid greenyellow;
-}
 </style>

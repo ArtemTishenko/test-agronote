@@ -1,16 +1,24 @@
 <template>
-    <img alt="Vue logo" src="./assets/logo.png">
     <div class="wrapper">
-        <button class="button" @click="getData">Загрузить данные</button>
-        <div class="wrapper wrapper__cards">
-            <p>accountCompleted:{{ accountOfCompleted }}</p>
-            <p></p>
+        <button class="button" @click="getData" :disabled="isLoading">Загрузить данные</button>
+       <p>        {{plotDataAll}}
+           {{plotDataCompleted}} {{plotDataLabels}}</p>
+        <div class="loader" v-if="isLoading">
+            <img class="icon-load" src="./assets/spinner.svg" alt="spinner">
+        </div>
+        <div v-else class="wrapper wrapper__cards">
             <ul class="cards">
-                <li v-for="(item) in cards" :key="item.id">
+                <li v-for="(item) in sortingCards" :key="item.userId">
                     <AppCard :item="item"></AppCard>
                 </li>
             </ul>
         </div>
+        <div class="wrapper__chart">
+            <BarChart ref="bar"
+                :chart-data="chartData"
+            />
+        </div>
+
     </div>
 
 </template>
@@ -21,6 +29,7 @@
 // import AppButton from "@/components/AppButton";
 import axios from "axios";
 import AppCard from "@/components/AppCard";
+import BarChart from "@/components/BarChart";
 
 export default {
     name: 'App',
@@ -28,115 +37,138 @@ export default {
         // HelloWorld,
         // Cards,
         // AppButton,
-        AppCard
+        AppCard,
+        BarChart
     },
     data() {
         return {
-            cards:[
-                // {
-                //     userId:1,
-                //     titles:["delectus aut autem", ],
-                //     totalCompleted: 10,
-                //     completed: 5,
-                //
-                // },
-                // {
-                //     userId:2,
-                //     titles:["delectus aut autem", ],
-                //     totalCompleted: 13,
-                //     completed: 9
-                // }
-            ],
             responseData: {},
-            example:{
-                completed: false,
-                id: 1,
-                title: "delectus aut autem",
-                userId: 1
-            }
+            isLoading:false,
+            chartData: {
+                labels: [ 'User1', 'User2', 'User3' ],
+                datasets: [
+                    {
+                        label:'all',
+                        data: [40, 20, 12],
+                        backgroundColor: '#f87979',
+                        order:2
+                    },
+                    {
+                        label:'done',
+                        data: [30, 10, 2],
+                        backgroundColor: '#1E90FF',
+                        order:1
+                    }
+                ]
+            },
         }
     },
-    computed:{
-        accountOfCompleted(){
+    computed: {
+        sortingCards() {
+            return this.arrCards.sort(function (a, b) {
+                if (a.completed - b.completed < 0) {
+                    return 1
+                } else if (a.completed - b.completed > 0) {
+                    return -1
+                } else {
+                    if (a.userId - b.userId < 0) {
+                        return -1
+                    } else {
+                        return 1
+                    }
+                }
+
+            })
+        },
+        plotDataAll(){
+            let arr = []
+            this.arrCards.forEach((item)=>{
+                arr.push(item.completed)
+            })
+            return arr
+        },
+        plotDataCompleted(){
+          let arr = []
+            this.arrCards.forEach((item)=>{
+                arr.push(item.totalCompleted)
+            })
+          return arr
+        },
+        plotDataLabels(){
+            let arr=[]
+            this.arrCards.forEach((item)=>{
+
+            })
+
+            return arr
+        },
+        arrCards() {
             let arrResult = []
             let result = {}
             let resultData = JSON.parse(JSON.stringify(this.responseData))
 
             let arrCards = []
             let accumCards = {
-                userId:0,
-                titles:[],
+                userId: 0,
+                titles: [],
                 totalCompleted: 0,
                 completed: 0,
             }
-            // result = resultData
-            // console.log('!!!!!',resultData)
-            debugger
-            if (!(resultData && Object.keys(resultData).length === 0 && Object.getPrototypeOf(resultData) === Object.prototype)){
-                console.log('!!!',resultData)
-
-                for(let i = 0; i < resultData.length; i++){
-                    if(((i+1)<resultData.length)){
-                        console.log('11111111',resultData[i].userId, resultData[i+1].userId , accumCards)
-                        if (resultData[i].userId === resultData[i+1].userId){
+            if (!(resultData && Object.keys(resultData).length === 0 && Object.getPrototypeOf(resultData) === Object.prototype)) {
+                for (let i = 0; i < resultData.length; i++) {
+                    if ((i + 1) < resultData.length) {
+                        if (resultData[i].userId === resultData[i + 1].userId) {
                             accumCards.userId = resultData[i].userId
                             accumCards.titles.push(resultData[i].title)
-                            accumCards.totalCompleted = accumCards.totalCompleted+1
-                            if( resultData[i].completed){
-                                accumCards.completed = accumCards.completed +1
+                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            if (resultData[i].completed) {
+                                accumCards.completed = accumCards.completed + 1
                             }
-                        }else{
-                            let test = JSON.stringify(accumCards)
-                            arrCards.push(JSON.parse(test))
+                        } else {
+                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            if (resultData[i].completed) {
+                                accumCards.completed = accumCards.completed + 1
+                            }
+
+                            let cardItem = JSON.stringify(accumCards)
+                            arrCards.push(JSON.parse(cardItem))
+
                             accumCards.userId = 0
                             accumCards.titles = []
                             accumCards.totalCompleted = 0
                             accumCards.completed = 0
                         }
+                    } else {
+                        if (resultData[i - 1].userId === resultData[i].userId) {
+                            accumCards.titles.push(resultData[i].title)
+                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            if (resultData[i].completed) {
+                                accumCards.completed = accumCards.completed + 1
+                            }
+                            let cardItem = JSON.stringify(accumCards)
+                            arrCards.push(JSON.parse(cardItem))
+                        }
                     }
-
-
                 }
-                console.log('arrCards=',arrCards)
             }
-
             return arrCards
         }
     },
     methods: {
-        addToCardsArray(item){
-            console.log('payload',item)
-            this.cards.push(item)
-        },
         getData() {
-            let res = null
+            this.isLoading = true
             axios({
                 method: 'get',
                 url: 'https://jsonplaceholder.typicode.com/todos',
             }).then((response) => {
+                this.isLoading = false
                 let resArr = (JSON.parse(JSON.stringify(response))).data
                 this.responseData = [...resArr]
-                // this.responseData.forEach((item)=>{
-                //     item = JSON.parse(JSON.stringify(item))
-                //     // return JSON.parse(JSON.stringify(item))
-                // })
-
-                // console.log(this.responseData)
-                //  res = this.responseData.reduce((acc,item)=>{
-                //
-                //      console.log(JSON.parse(JSON.stringify(item)))
-                //      ++acc
-                //      return acc
-                //
-                // },0)
-                // console.log(res)
-                // return JSON.parse(JSON.stringify(res))
-
             })
-            .catch((err) => {
-                console.log(err)
-                return res
-            })
+                .catch((err) => {
+                    this.isLoading = false
+                    console.log(err)
+                })
         }
     }
 }
@@ -151,6 +183,7 @@ export default {
     text-align: center;
     color: #2c3e50;
     margin-top: 60px;
+
 }
 
 ul {
@@ -179,5 +212,26 @@ h2 {
     justify-content: space-between;
     flex-wrap: wrap;
 }
+.button {
+    padding: 1rem;
+    border: 0px;
+    border-radius: 10px;
+    background-color: mediumseagreen;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: white;
 
+}
+
+.button:disabled{
+    background-color: gray;
+}
+.button:hover {
+    cursor: pointer;
+    font-weight: 600;
+    outline: 1px solid greenyellow;
+}
+.wrapper__chart {
+    width: 500px;
+}
 </style>
