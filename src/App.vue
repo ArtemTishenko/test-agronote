@@ -1,36 +1,31 @@
 <template>
     <div class="wrapper">
-        <button class="button" @click="handlerClickButton" :disabled="isLoading">Загрузить данные</button>
-       <p>        {{plotDataAll}}
-           {{plotDataCompleted}} {{plotDataLabels}}</p>
-        <div class="loader" v-if="isLoading">
-            <img class="icon-load" src="./assets/spinner.svg" alt="spinner">
-        </div>
-        <div v-else>
-            <div class="wrapper wrapper__cards">
-                <ul class="cards">
-                    <li v-for="(item) in sortingCards" :key="item.userId">
-                        <AppCard :item="item"></AppCard>
-                    </li>
-                </ul>
+        <section class="wrapper__button">
+            <button class="button" @click="handlerClickButton" :disabled="isLoading">Загрузить данные</button>
+            <div class="loader" v-if="isLoading">
+                <img class="loader__icon" src="./assets/spinner.svg" alt="spinner">
             </div>
-            <div class="wrapper__chart">
-                <BarChart ref="bar"
-                          :chart-data="plotChartData"
-                          :isLoadedData="!isLoading"
-                />
-            </div>
-        </div>
-
+        </section>
+        <section class="wrapper wrapper__cards">
+            <ul class="cards">
+                <li v-for="(item) in sortingCards" :key="item.userId">
+                    <AppCard :item="item"></AppCard>
+                </li>
+            </ul>
+        </section>
+        <section class="wrapper__chart">
+            <BarChart ref="bar"
+                      :chart-data="plotChartData"
+                      :isLoadedData="isLoading"
+            />
+        </section>
 
     </div>
 
 </template>
 
 <script>
-// import HelloWorld from './components/HelloWorld.vue'
-// import Cards from './components/Cards.vue'
-// import AppButton from "@/components/AppButton";
+
 import axios from "axios";
 import AppCard from "@/components/AppCard";
 import BarChart from "@/components/BarChart";
@@ -38,24 +33,21 @@ import BarChart from "@/components/BarChart";
 export default {
     name: 'App',
     components: {
-        // HelloWorld,
-        // Cards,
-        // AppButton,
         AppCard,
         BarChart
     },
     data() {
         return {
             responseData: {},
-            isLoading:false,
-            chartData: {
-
-            },
+            isLoading: false,
+            chartData: {},
         }
     },
     computed: {
         sortingCards() {
-            return this.arrCards.sort(function (a, b) {
+            let sortedCarts = [...this.arrCards]
+
+            return sortedCarts.sort((a, b) => {
                 if (a.completed - b.completed < 0) {
                     return 1
                 } else if (a.completed - b.completed > 0) {
@@ -67,105 +59,92 @@ export default {
                         return 1
                     }
                 }
+            })
+        },
+        plotData() {
+            let plotData = {
+                all: [],
+                completed: [],
+                labels: []
+            }
 
+            this.arrCards.forEach((item) => {
+                plotData.all.push(item.totalCompleted)
+                plotData.completed.push(item.completed)
+                plotData.labels.push(`Пользовтель ${item.userId}`)
             })
+            return plotData
         },
-        plotDataAll(){
-            let arr = []
-            this.arrCards.forEach((item)=>{
-                arr.push(item.completed)
-            })
-            return arr
-        },
-        plotDataCompleted(){
-          let arr = []
-            this.arrCards.forEach((item)=>{
-                arr.push(item.totalCompleted)
-            })
-          return arr
-        },
-        plotDataLabels(){
-            let arr=[]
-            this.arrCards.forEach((item)=>{
-                arr.push(`Пользовтель ${item.userId}`)
-            })
-            return arr
-        },
-        plotChartData(){
-            return{
-                labels: this.plotDataLabels,
+        plotChartData() {
+            return {
+                labels: this.plotData.labels,
                 datasets: [
                     {
-                        label:'All',
-                        data: this.plotDataAll,
+                        label: 'All',
+                        data: this.plotData.all,
                         backgroundColor: '#f87979',
-                        order:1
+                        order: 2
                     },
                     {
-                        label:'Completed',
-                        data: this.plotDataCompleted,
+                        label: 'Completed',
+                        data: this.plotData.completed,
                         backgroundColor: '#1E90FF',
-                        order:2
+                        order: 1
                     }
                 ]
             }
         },
         arrCards() {
-            let arrResult = []
-            let result = {}
             let resultData = JSON.parse(JSON.stringify(this.responseData))
-
             let arrCards = []
-            let accumCards = {
+            let accumCard = {
                 userId: 0,
                 titles: [],
                 totalCompleted: 0,
                 completed: 0,
             }
             if (!(resultData && Object.keys(resultData).length === 0 && Object.getPrototypeOf(resultData) === Object.prototype)) {
+
                 for (let i = 0; i < resultData.length; i++) {
                     if ((i + 1) < resultData.length) {
                         if (resultData[i].userId === resultData[i + 1].userId) {
-                            accumCards.userId = resultData[i].userId
-                            accumCards.titles.push(resultData[i].title)
-                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            accumCard.userId = resultData[i].userId
+                            accumCard.titles.push(resultData[i].title)
+                            accumCard.totalCompleted++
                             if (resultData[i].completed) {
-                                accumCards.completed = accumCards.completed + 1
+                                accumCard.completed++
                             }
                         } else {
-                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            accumCard.totalCompleted++
                             if (resultData[i].completed) {
-                                accumCards.completed = accumCards.completed + 1
+                                accumCard.completed++
                             }
+                            arrCards.push(JSON.parse(JSON.stringify(accumCard)))
 
-                            let cardItem = JSON.stringify(accumCards)
-                            arrCards.push(JSON.parse(cardItem))
-
-                            accumCards.userId = 0
-                            accumCards.titles = []
-                            accumCards.totalCompleted = 0
-                            accumCards.completed = 0
+                            accumCard.userId = 0
+                            accumCard.titles = []
+                            accumCard.totalCompleted = 0
+                            accumCard.completed = 0
                         }
                     } else {
                         if (resultData[i - 1].userId === resultData[i].userId) {
-                            accumCards.titles.push(resultData[i].title)
-                            accumCards.totalCompleted = accumCards.totalCompleted + 1
+                            accumCard.titles.push(resultData[i].title)
+                            accumCard.totalCompleted++
                             if (resultData[i].completed) {
-                                accumCards.completed = accumCards.completed + 1
+                                accumCard.completed++
                             }
-                            let cardItem = JSON.stringify(accumCards)
-                            arrCards.push(JSON.parse(cardItem))
+                            arrCards.push(JSON.parse(JSON.stringify(accumCard)))
                         }
                     }
                 }
             }
+
             return arrCards
         }
     },
     methods: {
-        async handlerClickButton(){
+        async handlerClickButton() {
             await this.getData()
-            console.log('1')
         },
         getData() {
             this.isLoading = true
@@ -194,7 +173,7 @@ export default {
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
     color: #2c3e50;
-    margin-top: 60px;
+    margin-top: 1rem;
 
 }
 
@@ -211,39 +190,64 @@ h2 {
 }
 
 .wrapper {
-
+    padding: 1rem;
 }
 
 .wrapper__cards {
     padding: 1rem;
 }
 
+.wrapper__button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 .cards {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: start;
     flex-wrap: wrap;
 }
+
+.loader {
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s ease;
+}
+
+.loader__icon {
+    width: 100%;
+    height: 100%;
+}
+
 .button {
     padding: 1rem;
-    border: 0px;
+    border: 0;
     border-radius: 10px;
     background-color: mediumseagreen;
     font-weight: 500;
-    margin-bottom: 10px;
     color: white;
-
+    margin-right: 20px;
+    transition: all 0.3s ease;
 }
 
-.button:disabled{
+.button:disabled {
     background-color: gray;
 }
+
+.button:disabled:hover {
+    opacity: 1;
+    cursor: not-allowed;
+}
+
 .button:hover {
     cursor: pointer;
-    font-weight: 600;
-    outline: 1px solid greenyellow;
+    opacity: 0.8;
 }
+
 .wrapper__chart {
-    width: 500px;
+    display: flex;
+    justify-content: center;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
     <Bar
-        v-if="isLoadedData"
+        v-if="!isLoadedData"
         :chart-options="chartOptions"
         :chart-data="chartData"
         :chart-id="chartId"
@@ -33,11 +33,11 @@ export default {
         },
         width: {
             type: Number,
-            default: 600
+            default: 500
         },
         height: {
             type: Number,
-            default: 400
+            default: 300
         },
         cssClasses: {
             default: '',
