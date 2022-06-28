@@ -16,8 +16,8 @@
             </div>
             <div class="wrapper__chart">
                 <BarChart ref="bar"
-                          :chart-data="chartData"
-                          :isLoadedData="isLoading"
+                          :chart-data="plotChartData"
+                          :isLoadedData="!isLoading"
                 />
             </div>
         </div>
@@ -49,21 +49,7 @@ export default {
             responseData: {},
             isLoading:false,
             chartData: {
-                labels: this.plotDataLabels,
-                datasets: [
-                    {
-                        label:'All',
-                        data: this.plotDataAll,
-                        backgroundColor: '#f87979',
-                        order:2
-                    },
-                    {
-                        label:'Completed',
-                        data: this.plotDataCompleted,
-                        backgroundColor: '#1E90FF',
-                        order:1
-                    }
-                ]
+
             },
         }
     },
@@ -104,6 +90,25 @@ export default {
                 arr.push(`Пользовтель ${item.userId}`)
             })
             return arr
+        },
+        plotChartData(){
+            return{
+                labels: this.plotDataLabels,
+                datasets: [
+                    {
+                        label:'All',
+                        data: this.plotDataAll,
+                        backgroundColor: '#f87979',
+                        order:1
+                    },
+                    {
+                        label:'Completed',
+                        data: this.plotDataCompleted,
+                        backgroundColor: '#1E90FF',
+                        order:2
+                    }
+                ]
+            }
         },
         arrCards() {
             let arrResult = []
