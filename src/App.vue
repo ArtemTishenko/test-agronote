@@ -1,23 +1,27 @@
 <template>
     <div class="wrapper">
-        <button class="button" @click="getData" :disabled="isLoading">Загрузить данные</button>
+        <button class="button" @click="handlerClickButton" :disabled="isLoading">Загрузить данные</button>
        <p>        {{plotDataAll}}
            {{plotDataCompleted}} {{plotDataLabels}}</p>
         <div class="loader" v-if="isLoading">
             <img class="icon-load" src="./assets/spinner.svg" alt="spinner">
         </div>
-        <div v-else class="wrapper wrapper__cards">
-            <ul class="cards">
-                <li v-for="(item) in sortingCards" :key="item.userId">
-                    <AppCard :item="item"></AppCard>
-                </li>
-            </ul>
+        <div v-else>
+            <div class="wrapper wrapper__cards">
+                <ul class="cards">
+                    <li v-for="(item) in sortingCards" :key="item.userId">
+                        <AppCard :item="item"></AppCard>
+                    </li>
+                </ul>
+            </div>
+            <div class="wrapper__chart">
+                <BarChart ref="bar"
+                          :chart-data="chartData"
+                          :isLoadedData="isLoading"
+                />
+            </div>
         </div>
-        <div class="wrapper__chart">
-            <BarChart ref="bar"
-                :chart-data="chartData"
-            />
-        </div>
+
 
     </div>
 
@@ -45,17 +49,17 @@ export default {
             responseData: {},
             isLoading:false,
             chartData: {
-                labels: [ 'User1', 'User2', 'User3' ],
+                labels: this.plotDataLabels,
                 datasets: [
                     {
-                        label:'all',
-                        data: [40, 20, 12],
+                        label:'All',
+                        data: this.plotDataAll,
                         backgroundColor: '#f87979',
                         order:2
                     },
                     {
-                        label:'done',
-                        data: [30, 10, 2],
+                        label:'Completed',
+                        data: this.plotDataCompleted,
                         backgroundColor: '#1E90FF',
                         order:1
                     }
@@ -97,9 +101,8 @@ export default {
         plotDataLabels(){
             let arr=[]
             this.arrCards.forEach((item)=>{
-
+                arr.push(`Пользовтель ${item.userId}`)
             })
-
             return arr
         },
         arrCards() {
@@ -155,20 +158,24 @@ export default {
         }
     },
     methods: {
+        async handlerClickButton(){
+            await this.getData()
+            console.log('1')
+        },
         getData() {
             this.isLoading = true
-            axios({
+
+            return axios({
                 method: 'get',
                 url: 'https://jsonplaceholder.typicode.com/todos',
             }).then((response) => {
                 this.isLoading = false
                 let resArr = (JSON.parse(JSON.stringify(response))).data
                 this.responseData = [...resArr]
+            }).catch((err) => {
+                this.isLoading = false
+                console.log(err)
             })
-                .catch((err) => {
-                    this.isLoading = false
-                    console.log(err)
-                })
         }
     }
 }

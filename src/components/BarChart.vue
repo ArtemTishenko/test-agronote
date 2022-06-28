@@ -1,5 +1,6 @@
 <template>
     <Bar
+        v-if="isLoadedData"
         :chart-options="chartOptions"
         :chart-data="chartData"
         :chart-id="chartId"
@@ -53,10 +54,15 @@ export default {
         chartData:{
             type: Object,
             default: () => {}
+        },
+        isLoadedData:{
+            type: Boolean,
+            default: false
         }
     },
     data() {
         return {
+            loaded:false,
             chartOptions: {
                 responsive: true,
                 scales: {
@@ -69,6 +75,7 @@ export default {
                 }
             }
         }
-    }
+    },
+
 }
 </script>
