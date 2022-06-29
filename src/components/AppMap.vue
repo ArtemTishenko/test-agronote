@@ -34,6 +34,7 @@ export default {
         }
     },
     mounted() {
+
         mapboxgl.accessToken = TOKEN
         this.map = new mapboxgl.Map({
             container: 'mapBoxContainer',
@@ -45,7 +46,8 @@ export default {
         this.map.on('load',()=>{
             this.map.addSource('route', {
                 'type': 'geojson',
-                'data': geojson
+                'data': geojson,
+                generateId: true
 
             });
             this.map.addLayer({
@@ -57,10 +59,51 @@ export default {
                     'line-cap': 'round'
                 },
                 'paint': {
-                    'line-color': 'red',
-                    'line-width': 5
+                    'line-color': [
+                        'case',['boolean',['feature-state','hover'], false],'red','green'
+                    ],
+                    'line-width': 5,
+
                 }
             });
+            this.map.addLayer({
+                'id': 'state-fills',
+                'type': 'fill',
+                'source': 'route',
+                'layout': {},
+                'paint': {
+                    'fill-color': '#627BC1',
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false], 1, 0.5]
+                }
+            })
+            let hoveredStateId = null;
+            this.map.on('mousemove', 'state-fills', (e) => {
+                if (e.features.length > 0) {
+                    if (hoveredStateId !== null) {
+                        this.map.setFeatureState(
+                            { source: 'route', id: hoveredStateId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredStateId = e.features[0].id;
+                    this.map.setFeatureState(
+                        { source: 'route', id: hoveredStateId },
+                        { hover: true }
+                    );
+                }
+            });
+            this.map.on('mouseleave', 'state-fills', () => {
+                if (hoveredStateId !== null) {
+                    this.map.setFeatureState(
+                        { source: 'route', id: hoveredStateId },
+                        { hover: false }
+                    );
+                }
+                hoveredStateId = null;
+            });
+
 
         })
     },
