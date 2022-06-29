@@ -6,18 +6,21 @@
                 <img class="loader__icon" src="./assets/spinner.svg" alt="spinner">
             </div>
         </section>
-        <section class="wrapper wrapper__cards">
-            <ul class="cards">
-                <li v-for="(item) in sortingCards" :key="item.userId">
-                    <AppCard :item="item"></AppCard>
-                </li>
-            </ul>
-        </section>
-        <section class="wrapper__chart">
-            <BarChart ref="bar"
-                      :chart-data="plotChartData"
-                      :isLoadedData="isLoading"
-            />
+                <!--        <section class="wrapper wrapper__cards">-->
+                <!--            <ul class="cards">-->
+                <!--                <li v-for="(item) in sortingCards" :key="item.userId">-->
+                <!--                    <AppCard :item="item"></AppCard>-->
+                <!--                </li>-->
+                <!--            </ul>-->
+                <!--        </section>-->
+                <!--        <section class="wrapper__chart">-->
+                <!--            <BarChart ref="bar"-->
+                <!--                      :chart-data="plotChartData"-->
+                <!--                      :isLoadedData="isLoading"-->
+                <!--            />-->
+                <!--        </section>-->
+        <section>
+            <app-map></app-map>
         </section>
 
     </div>
@@ -29,10 +32,12 @@
 import axios from "axios";
 import AppCard from "@/components/AppCard";
 import BarChart from "@/components/BarChart";
+import AppMap from "@/components/AppMap";
 
 export default {
     name: 'App',
     components: {
+        AppMap,
         AppCard,
         BarChart
     },
