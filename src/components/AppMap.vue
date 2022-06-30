@@ -8,7 +8,7 @@
 <script>
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import {TOKEN, geojson} from "@/env.local";
+import {TOKEN, geojson, poi2} from "@/env.local";
 
 export default {
     name:'AppMap',
@@ -17,7 +17,12 @@ export default {
         return{
             map:'',
             geojson:geojson,
-            widthClass:''
+            poi2:poi2,
+            widthClass:'',
+            coordInspection:[
+                [4.123124235,3.12312312321],
+                [4.123124235,3.12312312321]
+            ]
         }
     },
     props:['openMenu'],
@@ -46,10 +51,39 @@ export default {
     methods:{
         handlerBtnInspection(){
             const coordinates = this.geojson.features[0].geometry.coordinates[0][0];
+
+            let tempMinLongs =[]
+            let tempMaxLongs =[]
+            let tempMinLats =[]
+            let tempMaxLats =[]
+            let sortGeoJson =  JSON.parse(JSON.stringify(this.geojson.features))
+            sortGeoJson.forEach((feature)=>{
+                let sortCoordinates = feature.geometry.coordinates[0][0]
+                sortCoordinates.sort((a,b)=>{
+                    return a[0]-b[0]
+                })
+                tempMinLongs.push(sortCoordinates[0][0])
+                tempMaxLongs.push(sortCoordinates[sortCoordinates.length-1][0])
+
+                sortCoordinates.sort((a,b)=>{
+                    return a[1]-b[1]
+                })
+                tempMinLats.push(sortCoordinates[0][1])
+                tempMaxLats.push(sortCoordinates[sortCoordinates.length-1][1])
+
+
+            })
+            tempMinLongs.sort((a,b)=>(a-b))
+            tempMaxLongs.sort((a,b)=>(b-a))
+            tempMinLats.sort((a,b)=>(a-b))
+            tempMaxLats.sort((a,b)=>(b-a))
+
+
             const bounds = new mapboxgl.LngLatBounds(
-                coordinates[0],
-                coordinates[0]
+                [tempMaxLongs[0],tempMinLats[0]],
+                [tempMaxLongs[0],tempMaxLats[0]],
             );
+
             for (const coord of coordinates) {
                 bounds.extend(coord);
             }
@@ -77,7 +111,14 @@ export default {
                 generateId: true
 
             });
-            // console.log(this.map)
+
+            this.map.addSource('places',{
+                'type': 'geojson',
+                'data': this.poi2,
+                generateId: true
+            })
+
+            console.log(this.map)
             this.map.addLayer({
                 'id': 'route',
                 'type': 'line',
@@ -88,7 +129,7 @@ export default {
                 },
                 'paint': {
                     'line-color': [
-                        'case',['boolean',['feature-state','hover'], false],'red','green'
+                        'case',['boolean',['feature-state','hover'], false],'#267AF8','#92f88f'
                     ],
                     'line-width': 5,
 
@@ -98,14 +139,39 @@ export default {
                 'id': 'state-fills',
                 'type': 'fill',
                 'source': 'route',
-                filter: ['has', 'rating'],
                 'layout': {},
                 'paint': {
-                    'fill-color': '#bd0000',
+                    'fill-color': '#92f88f', //TODO
                     'fill-opacity': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false], 1, 0.5]
+                        ['boolean', ['feature-state', 'hover'], false], 1, 0.3]
                 }
+            })
+            this.map.addLayer({
+                'id': 'poi-labels',
+                'type': 'symbol',
+                'source': 'places',
+
+                'layout': {
+                    'text-field': ['get', 'id'],
+                    'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                    'text-radial-offset': 0.5,
+                    'text-justify': 'auto',
+                },
+
+            })
+            this.map.addLayer({
+                'id': 'poi-circle',
+                'type': 'circle',
+                'source': 'places',
+                'paint': {
+                    'circle-color': '#4b463b',
+                    'circle-radius': 6,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#ffffff',
+
+                }
+
             })
             let hoveredStateId = null;
             this.map.on('mousemove', 'state-fills', (e) => {
@@ -123,6 +189,7 @@ export default {
                     );
                 }
             });
+
             this.map.on('mouseleave', 'state-fills', () => {
                 if (hoveredStateId !== null) {
                     this.map.setFeatureState(
@@ -132,19 +199,21 @@ export default {
                 }
                 hoveredStateId = null;
             });
-
-
             this.map.on('resize', () => {
                 this.map.flyTo({
                     center: [centerCoordinates[0][0],centerCoordinates[0][1]],
                 });
             });
-
             this.map.on('click', 'state-fills', (e) => {
                 console.log(e.features[0].properties)
                 new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
-                    .setHTML(e.features[0].properties.name_rus)
+                    .setHTML(
+                        `<p>name_rus: ${e.features[0].properties.name_rus}</p>
+                         <p>area : ${e.features[0].properties.area}</p>
+                         <p>rating : ${e.features[0].properties.rating}</p>`
+                    )
+
                     .addTo(this.map);
             });
 

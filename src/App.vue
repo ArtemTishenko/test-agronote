@@ -140,6 +140,11 @@ h2 {
     transform: translateX(-50%);
 }
 
-
+.mapboxgl-popup{
+    width:350px !important
+}
+.mapboxgl-popup p{
+    text-align: left;
+}
 
 </style>
