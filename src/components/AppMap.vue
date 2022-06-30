@@ -1,26 +1,51 @@
 <template>
-    <div id="mapBoxContainer">
+    <div id="mapBoxContainer" class="mapBoxContainer" :class="mapWidth" >
 
     </div>
-    <button id="zoomto" class="btn-control" @click="handlerZoomTo">Zoom to bounds</button>
+    <button id="zoomto" class="btn-control" @click="handlerBtnInspection">Zoom to bounds</button>
 </template>
 
 <script>
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import {TOKEN, geojson} from "@/assets/env.local";
+import {TOKEN, geojson} from "@/env.local";
 
 export default {
     name:'AppMap',
     el:'#mapBoxContainer',
     data(){
         return{
-            map:''
+            map:'',
+            geojson:geojson,
+            widthClass:''
         }
     },
+    props:['openMenu'],
+    computed:{
+        mapWidth(){
+            if(this.map){
+                let mapDiv = document.querySelector('.wrapper__map');
+                let mapContainer = document.querySelector('#mapBoxContainer');
+                if(this.openMenu){
+                    mapDiv.style.setProperty('width', 'calc(100% - 250px)');
+                    mapDiv.style.setProperty('margin-left','250px')
+                    mapContainer.style.setProperty('width','calc(100% - 250px)')
+                }else{
+                    mapDiv.style.setProperty('width', 'calc(100% - 50px)');
+                    mapDiv.style.setProperty('margin-left','50px')
+                    mapContainer.style.setProperty('width','calc(100% - 50px)')
+
+                }
+                this.map.resize()
+
+            }
+               return true
+        },
+
+    },
     methods:{
-        handlerZoomTo(){
-            const coordinates = geojson.features[0].geometry.coordinates[0][0];
+        handlerBtnInspection(){
+            const coordinates = this.geojson.features[0].geometry.coordinates[0][0];
             const bounds = new mapboxgl.LngLatBounds(
                 coordinates[0],
                 coordinates[0]
@@ -34,22 +59,25 @@ export default {
         }
     },
     mounted() {
+        const centerCoordinates = this.geojson.features[0].geometry.coordinates[0][0]
 
         mapboxgl.accessToken = TOKEN
         this.map = new mapboxgl.Map({
             container: 'mapBoxContainer',
             'style' : 'mapbox://styles/mapbox/light-v10',
-            center:[35.8525241145474, 51.367268418343201],
-            zoom:11
+            center:[centerCoordinates[0][0],centerCoordinates[0][1]],
+            zoom:11,
+            // trackResize:true
         })
         // this.map.fitBounds([[-135, 47], [-60, 25]]);
         this.map.on('load',()=>{
             this.map.addSource('route', {
                 'type': 'geojson',
-                'data': geojson,
+                'data': this.geojson,
                 generateId: true
 
             });
+            // console.log(this.map)
             this.map.addLayer({
                 'id': 'route',
                 'type': 'line',
@@ -70,9 +98,10 @@ export default {
                 'id': 'state-fills',
                 'type': 'fill',
                 'source': 'route',
+                filter: ['has', 'rating'],
                 'layout': {},
                 'paint': {
-                    'fill-color': '#627BC1',
+                    'fill-color': '#bd0000',
                     'fill-opacity': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false], 1, 0.5]
@@ -105,14 +134,39 @@ export default {
             });
 
 
+            this.map.on('resize', () => {
+                this.map.flyTo({
+                    center: [centerCoordinates[0][0],centerCoordinates[0][1]],
+                });
+            });
+
+            this.map.on('click', 'state-fills', (e) => {
+                console.log(e.features[0].properties)
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(e.features[0].properties.name_rus)
+                    .addTo(this.map);
+            });
+
+
+
         })
     },
 }
 </script>
 
 <style scoped>
-#mapBoxContainer{
-    width: 500px;
-    height: 500px;
+.mapBoxContainer{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+}
+.btn-control{
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 9999;
 }
 </style>
