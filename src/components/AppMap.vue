@@ -2,7 +2,6 @@
     <div id="mapBoxContainer" class="mapBoxContainer" :class="mapWidth" >
 
     </div>
-    <button id="zoomto" class="btn-control" @click="handlerBtnInspection">Zoom to bounds</button>
 </template>
 
 <script>
@@ -19,10 +18,7 @@ export default {
             geojson:geojson,
             poi2:poi2,
             widthClass:'',
-            coordInspection:[
-                [4.123124235,3.12312312321],
-                [4.123124235,3.12312312321]
-            ]
+            centerCoordinates: geojson.features[0].geometry.coordinates[0][0]
         }
     },
     props:['openMenu'],
@@ -49,6 +45,22 @@ export default {
 
     },
     methods:{
+        initMapBox(){
+            // const centerCoordinates = this.geojson.features[0].geometry.coordinates[0][0]
+
+            mapboxgl.accessToken = TOKEN
+            this.map = new mapboxgl.Map({
+                container: 'mapBoxContainer',
+                'style' : 'mapbox://styles/mapbox/light-v10',
+                center:[this.centerCoordinates[0][0],this.centerCoordinates[0][1]],
+                zoom:11,
+            })
+            this.map.on('load',()=>{
+                this.addMapSource()
+                this.addMapLayers()
+                this.setMapListeners()
+            })
+        },
         handlerBtnInspection(){
             const coordinates = this.geojson.features[0].geometry.coordinates[0][0];
 
@@ -90,35 +102,51 @@ export default {
             this.map.fitBounds(bounds, {
                 padding: 20
             });
-        }
-    },
-    mounted() {
-        const centerCoordinates = this.geojson.features[0].geometry.coordinates[0][0]
-
-        mapboxgl.accessToken = TOKEN
-        this.map = new mapboxgl.Map({
-            container: 'mapBoxContainer',
-            'style' : 'mapbox://styles/mapbox/light-v10',
-            center:[centerCoordinates[0][0],centerCoordinates[0][1]],
-            zoom:11,
-            // trackResize:true
-        })
-        // this.map.fitBounds([[-135, 47], [-60, 25]]);
-        this.map.on('load',()=>{
-            this.map.addSource('route', {
-                'type': 'geojson',
-                'data': this.geojson,
-                generateId: true
-
+        },
+        setMapListeners(){
+            let hoveredStateId = null;
+            this.map.on('mousemove', 'state-fills', (e) => {
+                if (e.features.length > 0) {
+                    if (hoveredStateId !== null) {
+                        this.map.setFeatureState(
+                            { source: 'route', id: hoveredStateId },
+                            { hover: false }
+                        );
+                    }
+                    hoveredStateId = e.features[0].id;
+                    this.map.setFeatureState(
+                        { source: 'route', id: hoveredStateId },
+                        { hover: true }
+                    );
+                }
             });
+            this.map.on('mouseleave', 'state-fills', () => {
+                if (hoveredStateId !== null) {
+                    this.map.setFeatureState(
+                        { source: 'route', id: hoveredStateId },
+                        { hover: false }
+                    );
+                }
+                hoveredStateId = null;
+            });
+            this.map.on('resize', () => {
+                this.map.flyTo({
+                    center: [this.centerCoordinates[0][0],this.centerCoordinates[0][1]],
+                });
+            });
+            this.map.on('click', 'state-fills', (e) => {
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(
+                        `<p>name_rus: ${e.features[0].properties.name_rus}</p>
+                         <p>area : ${e.features[0].properties.area}</p>
+                         <p>rating : ${e.features[0].properties.rating}</p>`
+                    )
 
-            this.map.addSource('places',{
-                'type': 'geojson',
-                'data': this.poi2,
-                generateId: true
-            })
-
-            console.log(this.map)
+                    .addTo(this.map);
+            });
+        },
+        addMapLayers(){
             this.map.addLayer({
                 'id': 'route',
                 'type': 'line',
@@ -173,53 +201,25 @@ export default {
                 }
 
             })
-            let hoveredStateId = null;
-            this.map.on('mousemove', 'state-fills', (e) => {
-                if (e.features.length > 0) {
-                    if (hoveredStateId !== null) {
-                        this.map.setFeatureState(
-                            { source: 'route', id: hoveredStateId },
-                            { hover: false }
-                        );
-                    }
-                    hoveredStateId = e.features[0].id;
-                    this.map.setFeatureState(
-                        { source: 'route', id: hoveredStateId },
-                        { hover: true }
-                    );
-                }
+        },
+        addMapSource(){
+            this.map.addSource('route', {
+                'type': 'geojson',
+                'data': this.geojson,
+                generateId: true
+
             });
 
-            this.map.on('mouseleave', 'state-fills', () => {
-                if (hoveredStateId !== null) {
-                    this.map.setFeatureState(
-                        { source: 'route', id: hoveredStateId },
-                        { hover: false }
-                    );
-                }
-                hoveredStateId = null;
-            });
-            this.map.on('resize', () => {
-                this.map.flyTo({
-                    center: [centerCoordinates[0][0],centerCoordinates[0][1]],
-                });
-            });
-            this.map.on('click', 'state-fills', (e) => {
-                console.log(e.features[0].properties)
-                new mapboxgl.Popup()
-                    .setLngLat(e.lngLat)
-                    .setHTML(
-                        `<p>name_rus: ${e.features[0].properties.name_rus}</p>
-                         <p>area : ${e.features[0].properties.area}</p>
-                         <p>rating : ${e.features[0].properties.rating}</p>`
-                    )
+            this.map.addSource('places',{
+                'type': 'geojson',
+                'data': this.poi2,
+                generateId: true
+            })
+        },
 
-                    .addTo(this.map);
-            });
-
-
-
-        })
+    },
+    mounted() {
+        this.initMapBox()
     },
 }
 </script>

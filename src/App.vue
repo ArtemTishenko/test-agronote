@@ -8,7 +8,10 @@
                 <div class="menu__footer">
                     <button class="menu__button"
                             @click="openMenu = !openMenu">
-                        <span>...</span>
+                        <span class="menu__button-icon">
+                            <img class="menu__icon-image" src="./assets/burger.svg" alt="burger-menu">
+                        </span>
+
                     </button>
                 </div>
             </section>
@@ -129,10 +132,27 @@ h2 {
     font-weight: 700;
     font-size: 21px;
     cursor: pointer;
+    padding: 0;
 }
 .menu__button:hover{
     color: white
 }
+.menu__button-icon{
+    width: 15px;
+    height: 15px;
+    padding: 1px;
+}
+.menu__icon-image{
+    width: 100%;
+    height: 100%;
+    fill: white;
+    transition: 0.3s ease;
+}
+.menu__icon-image rect{
+    fill: red;
+}
+
+
 .menu__footer{
     position: absolute;
     bottom: 10px;
